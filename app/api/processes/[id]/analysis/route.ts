@@ -1,14 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params;
     const body = await req.json();
 
     const analysis = await prisma.processAnalysis.upsert({
-      where: { processId: params.id },
+      where: { processId: id },
       create: {
-        processId: params.id,
+        processId: id,
         authorId: body.authorId || null,
         complexity: body.complexity,
         maturity: body.maturity,

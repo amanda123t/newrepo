@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params;
     const body = await req.json();
 
     const opportunity = await prisma.opportunity.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         description: body.description,
         type: body.type,
@@ -29,9 +30,10 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   }
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    await prisma.opportunity.delete({ where: { id: params.id } });
+    const { id } = await params;
+    await prisma.opportunity.delete({ where: { id } });
     return NextResponse.json({ success: true });
   } catch (error) {
     return NextResponse.json({ error: "Erro ao deletar oportunidade" }, { status: 500 });

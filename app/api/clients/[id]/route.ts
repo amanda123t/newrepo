@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params;
     const client = await prisma.client.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         responsible: { select: { id: true, name: true, email: true } },
         processes: {
@@ -31,11 +32,12 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   }
 }
 
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params;
     const body = await req.json();
     const client = await prisma.client.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         name: body.name,
         segment: body.segment,
@@ -53,9 +55,10 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   }
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    await prisma.client.delete({ where: { id: params.id } });
+    const { id } = await params;
+    await prisma.client.delete({ where: { id } });
     return NextResponse.json({ success: true });
   } catch (error) {
     return NextResponse.json({ error: "Erro ao deletar cliente" }, { status: 500 });
