@@ -51,7 +51,7 @@ export async function POST() {
         responsibleId: consultant1.id,
         projectStatus: "ACTIVE",
         startDate: new Date("2024-01-15"),
-        teamMembers: ["Ana Souza", "Carlos Mendes"],
+        teamMembers: JSON.stringify(["Ana Souza", "Carlos Mendes"]),
         description: "Projeto de mapeamento e otimização de processos produtivos e logísticos.",
       },
     });
@@ -65,7 +65,7 @@ export async function POST() {
         responsibleId: consultant2.id,
         projectStatus: "ACTIVE",
         startDate: new Date("2024-03-01"),
-        teamMembers: ["Carlos Mendes"],
+        teamMembers: JSON.stringify(["Carlos Mendes"]),
         description: "Digitalização e automação de processos de atendimento e vendas.",
       },
     });
@@ -80,7 +80,7 @@ export async function POST() {
         projectStatus: "COMPLETED",
         startDate: new Date("2023-06-01"),
         endDate: new Date("2023-12-31"),
-        teamMembers: ["Ana Souza"],
+        teamMembers: JSON.stringify(["Ana Souza"]),
         description: "Redesenho de processos operacionais de coleta e entrega.",
       },
     });
