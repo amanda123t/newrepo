@@ -1,0 +1,272 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// TENANTS / ORGANIZATIONS
+// ============================================================
+model Tenant {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  clients   Client[]
+  users     User[]
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  role      UserRole @default(CONSULTANT)
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  clientsResponsible     Client[]          @relation("ClientResponsible")
+  processesResponsible   Process[]         @relation("ProcessConsultant")
+  opportunitiesOwned     Opportunity[]     @relation("OpportunityOwner")
+  analysesAuthored       ProcessAnalysis[]
+}
+
+enum UserRole {
+  ADMIN
+  CONSULTANT
+  VIEWER
+}
+
+// ============================================================
+// CLIENTS
+// ============================================================
+model Client {
+  id             String        @id @default(cuid())
+  tenantId       String
+  tenant         Tenant        @relation(fields: [tenantId], references: [id])
+  name           String
+  segment        String
+  size           CompanySize
+  responsibleId  String?
+  responsible    User?         @relation("ClientResponsible", fields: [responsibleId], references: [id])
+  projectStatus  ProjectStatus @default(ACTIVE)
+  startDate      DateTime?
+  endDate        DateTime?
+  teamMembers    String[]
+  description    String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  processes      Process[]
+}
+
+enum CompanySize {
+  MICRO
+  SMALL
+  MEDIUM
+  LARGE
+  ENTERPRISE
+}
+
+enum ProjectStatus {
+  PROSPECT
+  ACTIVE
+  PAUSED
+  COMPLETED
+  CANCELLED
+}
+
+// ============================================================
+// PROCESSES
+// ============================================================
+model Process {
+  id                   String    @id @default(cuid())
+  clientId             String
+  client               Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  consultantId         String?
+  consultant           User?     @relation("ProcessConsultant", fields: [consultantId], references: [id])
+
+  name                 String
+  area                 String
+  macroprocess         String?
+  type                 ProcessType
+  description          String?
+  objective            String?
+
+  bpmnFileUrl          String?
+  bpmnFileName         String?
+  version              String    @default("1.0")
+  mappingDate          DateTime?
+
+  monthlyVolume        Int?
+  avgExecutionTime     Float?
+  peopleInvolved       Int?
+  systemsUsed          String[]
+  standardizationLevel Int?      @default(0)
+  automationLevel      Int?      @default(0)
+
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  analysis             ProcessAnalysis?
+  opportunities        Opportunity[]
+  indicators           ProcessIndicator[]
+  versions             ProcessVersion[]
+}
+
+enum ProcessType {
+  OPERATIONAL
+  SUPPORT
+  STRATEGIC
+}
+
+// ============================================================
+// PROCESS ANALYSIS
+// ============================================================
+model ProcessAnalysis {
+  id              String           @id @default(cuid())
+  processId       String           @unique
+  process         Process          @relation(fields: [processId], references: [id], onDelete: Cascade)
+  authorId        String?
+  author          User?            @relation(fields: [authorId], references: [id])
+
+  complexity      ComplexityLevel
+  maturity        MaturityLevel
+  problems        ProcessProblem[]
+  analyticalNotes String?
+
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+}
+
+enum ComplexityLevel {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum MaturityLevel {
+  INITIAL
+  DEFINED
+  STANDARDIZED
+  OPTIMIZED
+}
+
+enum ProcessProblem {
+  REWORK
+  MANUAL_ACTIVITIES
+  LACK_OF_STANDARDIZATION
+  PEOPLE_DEPENDENCY
+  OPERATIONAL_ERRORS
+  OPERATIONAL_RISK
+}
+
+// ============================================================
+// OPPORTUNITIES
+// ============================================================
+model Opportunity {
+  id                       String          @id @default(cuid())
+  processId                String
+  process                  Process         @relation(fields: [processId], references: [id], onDelete: Cascade)
+  ownerId                  String?
+  owner                    User?           @relation("OpportunityOwner", fields: [ownerId], references: [id])
+
+  description              String
+  type                     OpportunityType
+  expectedImpact           ImpactLevel
+  implementationComplexity ComplexityLevel
+  effortEstimate           String?
+  estimatedHoursReduction  Float?
+  estimatedCostReduction   Float?
+  operationalRiskReduction String?
+
+  status                   PipelineStatus  @default(IDENTIFIED)
+  deadline                 DateTime?
+  progress                 Int?            @default(0)
+  observations             String?
+
+  createdAt                DateTime        @default(now())
+  updatedAt                DateTime        @updatedAt
+}
+
+enum OpportunityType {
+  STANDARDIZATION
+  OPTIMIZATION
+  AUTOMATION
+  PROCESS_REDESIGN
+  DIGITALIZATION
+  AI_USE
+}
+
+enum ImpactLevel {
+  LOW
+  MEDIUM
+  HIGH
+  TRANSFORMATIONAL
+}
+
+enum PipelineStatus {
+  IDENTIFIED
+  PRIORITIZED
+  UNDER_ANALYSIS
+  IN_DEVELOPMENT
+  IN_DEPLOYMENT
+  COMPLETED
+}
+
+// ============================================================
+// PROCESS INDICATORS
+// ============================================================
+model ProcessIndicator {
+  id           String                @id @default(cuid())
+  processId    String
+  process      Process               @relation(fields: [processId], references: [id], onDelete: Cascade)
+
+  name         String
+  type         IndicatorType
+  unit         String?
+  target       Float?
+  current      Float?
+
+  measurements IndicatorMeasurement[]
+
+  createdAt    DateTime              @default(now())
+  updatedAt    DateTime              @updatedAt
+}
+
+enum IndicatorType {
+  EFFICIENCY
+  QUALITY
+  TIME
+  COST
+  RISK
+}
+
+model IndicatorMeasurement {
+  id          String           @id @default(cuid())
+  indicatorId String
+  indicator   ProcessIndicator @relation(fields: [indicatorId], references: [id], onDelete: Cascade)
+  value       Float
+  measuredAt  DateTime
+  notes       String?
+  createdAt   DateTime         @default(now())
+}
+
+// ============================================================
+// PROCESS VERSIONS
+// ============================================================
+model ProcessVersion {
+  id          String   @id @default(cuid())
+  processId   String
+  process     Process  @relation(fields: [processId], references: [id], onDelete: Cascade)
+  version     String
+  changes     String?
+  bpmnFileUrl String?
+  createdAt   DateTime @default(now())
+}
