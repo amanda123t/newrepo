@@ -6,7 +6,7 @@ Plataforma web para gestão de processos organizacionais, utilizada por consulto
 
 - **Frontend/Backend**: Next.js 15 (App Router) + TypeScript
 - **Estilização**: Tailwind CSS v4
-- **ORM**: Prisma + PostgreSQL
+- **ORM**: Prisma — **SQLite em dev, PostgreSQL em produção**
 - **Gráficos**: Recharts
 - **Ícones**: Lucide React
 
@@ -22,41 +22,56 @@ Plataforma web para gestão de processos organizacionais, utilizada por consulto
 8. **Priorização Inteligente** — Ranking automático + Matriz Impacto x Complexidade
 9. **Portfólio de Processos** — Visão tabular com filtros e ordenação por múltiplas colunas
 
+## Banco de Dados
+
+O projeto usa **SQLite automaticamente em desenvolvimento** e **PostgreSQL em produção**.
+Não é necessário instalar nada localmente para rodar.
+
+| Ambiente | Banco | Schema |
+|----------|-------|--------|
+| Dev (padrão) | SQLite (`file:./dev.db`) | `prisma/schema.dev.prisma` |
+| Produção | PostgreSQL | `prisma/schema.prisma` |
+
+A detecção é automática via `DATABASE_URL`:
+- Não definida ou `file:*` → SQLite
+- `postgresql://` ou `postgres://` → PostgreSQL
+
 ## Setup
 
-### 1. Pré-requisitos
-- Node.js 18+
-- PostgreSQL 14+
-
-### 2. Instalação
+### Desenvolvimento (SQLite — zero configuração)
 
 ```bash
-npm install
-
-cp .env.example .env
-# Edite o .env com sua string de conexão PostgreSQL
-
-npx prisma migrate dev --name init
-npx prisma generate
+npm install                              # instala dependências + gera cliente Prisma
+npm run db:dev -- --name init            # cria o banco SQLite e migra
+npm run dev                              # inicia o servidor
 ```
 
-### 3. Executar
+Acesse [http://localhost:3000](http://localhost:3000) e clique em **"Carregar dados de demonstração"**.
+
+### Produção (PostgreSQL — ex: Neon, Supabase, Vercel Postgres)
 
 ```bash
-npm run dev
+# Configure a variável de ambiente no servidor/Vercel:
+DATABASE_URL="postgresql://user:pass@host/db?sslmode=require"
+
+# O build já roda prisma generate automaticamente:
+npm run build
+npm start
 ```
 
-Acesse [http://localhost:3000](http://localhost:3000)
+Após o deploy, inicialize o banco:
+```bash
+npx prisma migrate deploy   # aplica migrações PostgreSQL
+curl -X POST https://sua-app.vercel.app/api/seed   # dados de demo (opcional)
+```
 
-### 4. Dados de demonstração
+### Dados de demonstração
 
-Na primeira execução, clique em **"Carregar dados de demonstração"** no Dashboard para popular o banco com:
+Na primeira execução clique em **"Carregar dados de demonstração"** no Dashboard:
 - 3 clientes (Grupo Horizonte, TechRetail, LogiExpress)
 - 5 processos mapeados com análises completas
 - 7 oportunidades de melhoria com estimativas de ROI
 - 4 indicadores com 6 meses de medições históricas
-
-Ou via API: `curl -X POST http://localhost:3000/api/seed`
 
 ## Estrutura
 
