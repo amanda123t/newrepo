@@ -1,8 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 
-// Auto-detect database type based on DATABASE_URL
-// - Not set or starts with "file:" → SQLite (desenvolvimento local)
-// - Starts with "postgresql"/"postgres" → PostgreSQL (produção)
+// Auto-detect database type based on DATABASE_URL.
+// Fallback to SQLite when DATABASE_URL is not set (desenvolvimento local).
 const DATABASE_URL =
   process.env.DATABASE_URL ??
   (process.env.NODE_ENV === "production" ? undefined : "file:./dev.db");
@@ -12,15 +11,10 @@ export const isSQLite =
   DATABASE_URL.startsWith("file:") ||
   DATABASE_URL.startsWith("sqlite:");
 
-// Ensure DATABASE_URL env is set so Prisma can connect (SQLite default)
-if (isSQLite && !process.env.DATABASE_URL) {
-  process.env.DATABASE_URL = "file:./dev.db";
-}
-
 // ============================================================
 // SQLite JSON-array middleware
-// SQLite doesn't support native arrays — they're stored as JSON strings.
-// This middleware converts transparently on all reads and writes.
+// SQLite doesn't support native arrays — stored as JSON strings.
+// Middleware converts transparently on all reads and writes.
 // ============================================================
 const JSON_ARRAY_FIELDS: Record<string, string[]> = {
   Client: ["teamMembers"],
@@ -45,7 +39,7 @@ function parseArraysDeep(obj: unknown): void {
     return;
   }
   const record = obj as Record<string, unknown>;
-  // Parse all known JSON-array fields (works across nested includes)
+  // Parse all known JSON-array fields (handles nested includes automatically)
   for (const fields of Object.values(JSON_ARRAY_FIELDS)) {
     for (const field of fields) {
       if (typeof record[field] === "string") {
@@ -57,7 +51,6 @@ function parseArraysDeep(obj: unknown): void {
       }
     }
   }
-  // Recurse into nested objects/arrays for includes
   for (const value of Object.values(record)) {
     if (value && typeof value === "object") {
       parseArraysDeep(value);
@@ -69,12 +62,14 @@ function parseArraysDeep(obj: unknown): void {
 // Prisma Client singleton
 // ============================================================
 function createPrismaClient(): PrismaClient {
+  // Prisma v7: datasourceUrl passed to constructor (url removed from schema files)
   const client = new PrismaClient({
+    datasourceUrl: DATABASE_URL,
     log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
   });
 
   if (isSQLite) {
-    // $use middleware transparently handles JSON<->array conversion for SQLite
+    // Transparent JSON<->array conversion for SQLite
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-expect-error — $use deprecated in v5+ but still functional in Prisma v7
     client.$use(async (params: any, next: any) => {
@@ -99,7 +94,7 @@ function createPrismaClient(): PrismaClient {
 
       const result = await next(params);
 
-      // After read: parse JSON strings back to arrays (handles nested includes)
+      // After read: parse JSON strings back to arrays (deep — handles includes)
       if (result) parseArraysDeep(result);
 
       return result;
