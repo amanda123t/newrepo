@@ -20,6 +20,16 @@ import {
 
 type SortField = "name" | "automationLevel" | "standardizationLevel" | "monthlyVolume" | "opportunities" | "savings";
 type SortDir = "asc" | "desc";
+type OpportunityType = "AUTOMATION" | "AI_USE" | "OPTIMIZATION" | "STANDARDIZATION" | "PROCESS_REDESIGN" | "DIGITALIZATION";
+
+const OPPORTUNITY_DOT_COLORS: Record<OpportunityType, string> = {
+  AUTOMATION: "#8b5cf6",
+  AI_USE: "#ec4899",
+  OPTIMIZATION: "#f59e0b",
+  STANDARDIZATION: "#3b82f6",
+  PROCESS_REDESIGN: "#f97316",
+  DIGITALIZATION: "#06b6d4",
+};
 
 export default function PortfolioPage() {
   const [processes, setProcesses] = useState<any[]>([]);
@@ -225,20 +235,11 @@ export default function PortfolioPage() {
                             </span>
                             {p.opportunities?.length > 0 && (
                               <div className="flex gap-0.5 flex-wrap justify-center">
-                                {Array.from(new Set(p.opportunities.map((o: any) => o.type))).slice(0, 2).map((type: any) => (
+                                {(Array.from(new Set(p.opportunities.map((o: any) => o.type))) as OpportunityType[]).slice(0, 2).map((type) => (
                                   <div
                                     key={type}
                                     className="w-2 h-2 rounded-full"
-                                    style={{
-                                      background: {
-                                        AUTOMATION: "#8b5cf6",
-                                        AI_USE: "#ec4899",
-                                        OPTIMIZATION: "#f59e0b",
-                                        STANDARDIZATION: "#3b82f6",
-                                        PROCESS_REDESIGN: "#f97316",
-                                        DIGITALIZATION: "#06b6d4",
-                                      }[type] || "#94a3b8",
-                                    }}
+                                    style={{ background: OPPORTUNITY_DOT_COLORS[type] ?? "#94a3b8" }}
                                   />
                                 ))}
                               </div>

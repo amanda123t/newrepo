@@ -38,49 +38,49 @@ export async function GET() {
     ]);
 
     // Oportunidades por tipo
-    const byType = opportunities.reduce((acc: Record<string, number>, opp) => {
+    const byType = opportunities.reduce((acc: Record<string, number>, opp: any) => {
       acc[opp.type] = (acc[opp.type] || 0) + 1;
       return acc;
     }, {});
 
     // Oportunidades por impacto
-    const byImpact = opportunities.reduce((acc: Record<string, number>, opp) => {
+    const byImpact = opportunities.reduce((acc: Record<string, number>, opp: any) => {
       acc[opp.expectedImpact] = (acc[opp.expectedImpact] || 0) + 1;
       return acc;
     }, {});
 
     // Oportunidades por status (pipeline)
-    const byStatus = opportunities.reduce((acc: Record<string, number>, opp) => {
+    const byStatus = opportunities.reduce((acc: Record<string, number>, opp: any) => {
       acc[opp.status] = (acc[opp.status] || 0) + 1;
       return acc;
     }, {});
 
     // Economia potencial total
-    const totalSavings = opportunities.reduce((sum, opp) => {
+    const totalSavings = opportunities.reduce((sum: number, opp: any) => {
       return sum + (opp.estimatedCostReduction || 0);
     }, 0);
 
-    const totalHoursSaved = opportunities.reduce((sum, opp) => {
+    const totalHoursSaved = opportunities.reduce((sum: number, opp: any) => {
       return sum + (opp.estimatedHoursReduction || 0);
     }, 0);
 
     // Ranking de automação - processos com maior potencial
-    const automationRanking = processes
-      .map((p) => ({
+    const automationRanking = (processes as any[])
+      .map((p: any) => ({
         id: p.id,
         name: p.name,
         client: p.client.name,
         automationLevel: p.automationLevel || 0,
-        opportunities: p.opportunities.filter((o) => o.type === "AUTOMATION" || o.type === "AI_USE").length,
-        potentialSaving: p.opportunities.reduce((sum, o) => sum + (o.estimatedCostReduction || 0), 0),
+        opportunities: p.opportunities.filter((o: any) => o.type === "AUTOMATION" || o.type === "AI_USE").length,
+        potentialSaving: p.opportunities.reduce((sum: number, o: any) => sum + (o.estimatedCostReduction || 0), 0),
       }))
-      .sort((a, b) => b.opportunities - a.opportunities || a.automationLevel - b.automationLevel)
+      .sort((a: any, b: any) => b.opportunities - a.opportunities || a.automationLevel - b.automationLevel)
       .slice(0, 5);
 
     // Processos com maior risco
-    const highRiskProcesses = processes
-      .filter((p) => p.analysis?.problems.includes("OPERATIONAL_RISK" as any))
-      .map((p) => ({
+    const highRiskProcesses = (processes as any[])
+      .filter((p: any) => p.analysis?.problems.includes("OPERATIONAL_RISK"))
+      .map((p: any) => ({
         id: p.id,
         name: p.name,
         client: p.client.name,
@@ -91,7 +91,7 @@ export async function GET() {
       .slice(0, 5);
 
     // Oportunidades completadas
-    const completed = opportunities.filter((o) => o.status === "COMPLETED").length;
+    const completed = (opportunities as any[]).filter((o: any) => o.status === "COMPLETED").length;
 
     return NextResponse.json({
       kpis: {
